@@ -1,0 +1,32 @@
+import { NextRequest, NextResponse } from "next/server";
+import base from "@/lib/airtable";
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+
+    await base("Leads").update([
+      {
+        id: body.id,
+        fields: {
+          "Proposal Status": "Approved",
+        },
+      },
+    ]);
+
+    return NextResponse.json({
+      success: true,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      {
+        success: false,
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+}
