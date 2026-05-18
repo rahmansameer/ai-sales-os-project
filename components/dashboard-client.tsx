@@ -56,21 +56,21 @@ export default function DashboardClient() {
   const [filter, setFilter] = useState("all");
 
   const approvedCount = leads.filter(
-    (lead: any) => lead["Proposal Status"] === "Approved",
+    (lead: any) => lead.proposal_status === "Approved",
   ).length;
 
   const filteredLeads = leads.filter((lead: any) => {
     const matchesSearch =
-      lead.Name?.toLowerCase().includes(search.toLowerCase()) ||
-      lead.Email?.toLowerCase().includes(search.toLowerCase()) ||
-      lead.Message?.toLowerCase().includes(search.toLowerCase());
+      lead.name?.toLowerCase().includes(search.toLowerCase()) ||
+      lead.email?.toLowerCase().includes(search.toLowerCase()) ||
+      lead.message?.toLowerCase().includes(search.toLowerCase());
 
     if (filter === "approved") {
-      return matchesSearch && lead["Proposal Status"] === "Approved";
+      return matchesSearch && lead.proposal_status === "Approved";
     }
 
     if (filter === "draft") {
-      return matchesSearch && lead["Proposal Status"] !== "Approved";
+      return matchesSearch && lead.proposal_status !== "Approved";
     }
 
     return matchesSearch;
@@ -207,7 +207,7 @@ export default function DashboardClient() {
 
         <div className="space-y-4">
           {filteredLeads.map((lead: any, index: number) => {
-            const approved = lead["Proposal Status"] === "Approved";
+            const approved = lead.proposal_status === "Approved";
 
             return (
               <motion.div
@@ -230,15 +230,15 @@ export default function DashboardClient() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="text-[17px] font-semibold tracking-tight">
-                        {lead.Name}
+                        {lead.name}
                       </h2>
 
                       <div className="px-2.5 py-1 rounded-md bg-zinc-100 text-xs text-zinc-600">
-                        {lead.Status}
+                        {lead.status}
                       </div>
 
                       <div className="px-2.5 py-1 rounded-md bg-zinc-100 text-xs text-zinc-600">
-                        Score {lead["Lead Score"] || 0}
+                        Score {lead.lead_score || 0}
                       </div>
 
                       <div
@@ -255,11 +255,11 @@ export default function DashboardClient() {
                     <div className="flex items-center gap-2 mt-3 text-zinc-500">
                       <Mail className="w-4 h-4 shrink-0" />
 
-                      <p className="text-sm truncate">{lead.Email}</p>
+                      <p className="text-sm truncate">{lead.email}</p>
                     </div>
 
                     <p className="mt-5 text-[15px] text-zinc-700 leading-7 max-w-4xl">
-                      {lead.Message}
+                      {lead.message}
                     </p>
                   </div>
 

@@ -1,27 +1,31 @@
 import { NextResponse } from "next/server";
-import base from "@/lib/airtable";
+
+import { supabase } from "@/lib/supabase";
 
 export async function GET() {
   try {
-    const records = await base("Leads")
-      .select({
-        maxRecords: 50,
-        view: "Grid view",
-      })
-      .all();
+    const { data, error } = await supabase
+      .from("leads")
+      .select("*")
+      .order("created_at", {
+        ascending: false,
+      });
 
-    const leads = records.map((record) => ({
-      id: record.id,
-      ...record.fields,
-    }));
+    if (error) {
+      throw error;
+    }
 
-    return NextResponse.json(leads);
+    return NextResponse.json(data || []);
   } catch (error) {
     console.error(error);
 
     return NextResponse.json(
-      { error: "Failed to fetch leads" },
-      { status: 500 },
+      {
+        error: "Failed to fetch leads",
+      },
+      {
+        status: 500,
+      },
     );
   }
 }
