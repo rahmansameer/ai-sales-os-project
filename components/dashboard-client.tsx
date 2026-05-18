@@ -86,33 +86,99 @@ export default function DashboardClient() {
             <div className="bg-white">
               <DialogHeader className="px-8 pt-8 pb-6 border-b border-black/[0.06]">
                 <DialogTitle className="text-[22px] font-semibold tracking-tight">
-                  {selectedLead.Name}
+                  {selectedLead.name}
                 </DialogTitle>
 
                 <p className="text-sm text-zinc-500 mt-2">
-                  {selectedLead.Email}
+                  {selectedLead.email}
                 </p>
               </DialogHeader>
 
-              <div className="p-8">
-                <div className="flex items-center gap-2 mb-6">
+              <div className="p-8 space-y-8">
+                <div className="flex items-center gap-2 flex-wrap">
                   <div className="px-2.5 py-1 rounded-md bg-zinc-100 text-xs text-zinc-700">
-                    {selectedLead.Status}
+                    {selectedLead.status}
                   </div>
 
                   <div className="px-2.5 py-1 rounded-md bg-zinc-100 text-xs text-zinc-700">
-                    Score {selectedLead["Lead Score"]}
+                    Score {selectedLead.lead_score || 0}
+                  </div>
+
+                  <div
+                    className={`px-2.5 py-1 rounded-md text-xs ${
+                      selectedLead.proposal_status === "Approved"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    {selectedLead.proposal_status}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="border border-black/[0.06] rounded-xl p-4">
+                    <p className="text-xs text-zinc-400 uppercase tracking-wide">
+                      Lead Quality
+                    </p>
+
+                    <h3 className="mt-2 text-sm font-semibold">
+                      {selectedLead.lead_quality || "N/A"}
+                    </h3>
+                  </div>
+
+                  <div className="border border-black/[0.06] rounded-xl p-4">
+                    <p className="text-xs text-zinc-400 uppercase tracking-wide">
+                      Urgency
+                    </p>
+
+                    <h3 className="mt-2 text-sm font-semibold">
+                      {selectedLead.urgency || "N/A"}
+                    </h3>
+                  </div>
+
+                  <div className="border border-black/[0.06] rounded-xl p-4">
+                    <p className="text-xs text-zinc-400 uppercase tracking-wide">
+                      Buyer Intent
+                    </p>
+
+                    <h3 className="mt-2 text-sm font-semibold">
+                      {selectedLead.buyer_intent || "N/A"}
+                    </h3>
+                  </div>
+
+                  <div className="border border-black/[0.06] rounded-xl p-4">
+                    <p className="text-xs text-zinc-400 uppercase tracking-wide">
+                      Project Size
+                    </p>
+
+                    <h3 className="mt-2 text-sm font-semibold">
+                      {selectedLead.project_size || "N/A"}
+                    </h3>
                   </div>
                 </div>
 
                 <div>
                   <p className="text-xs uppercase tracking-wide text-zinc-400 mb-3">
-                    Message
+                    AI Analysis
                   </p>
 
-                  <p className="text-[15px] leading-7 text-zinc-700">
-                    {selectedLead.Message}
+                  <div className="border border-black/[0.06] rounded-xl p-5">
+                    <p className="text-[15px] leading-7 text-zinc-700">
+                      {selectedLead.ai_reason || "No AI analysis available"}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-zinc-400 mb-3">
+                    Client Message
                   </p>
+
+                  <div className="border border-black/[0.06] rounded-xl p-5">
+                    <p className="text-[15px] leading-7 text-zinc-700">
+                      {selectedLead.message}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
