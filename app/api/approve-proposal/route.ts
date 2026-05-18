@@ -17,6 +17,16 @@ export async function POST(request: Request) {
       throw error;
     }
 
+    await fetch("http://localhost:5678/webhook-test/approve-proposal", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id,
+      }),
+    });
+
     return NextResponse.json({
       success: true,
     });

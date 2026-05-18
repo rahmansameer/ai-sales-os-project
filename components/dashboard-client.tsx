@@ -3,6 +3,8 @@
 import useSWR from "swr";
 import { motion } from "framer-motion";
 import { Mail, Trash2, Search } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 
 import { useState } from "react";
 
@@ -53,6 +55,13 @@ export default function DashboardClient() {
 
   const [selectedLead, setSelectedLead] = useState<any>(null);
 
+  const { data: activitiesData } = useSWR(
+    selectedLead ? `/api/lead-activities/${selectedLead.id}` : null,
+    fetcher,
+  );
+
+  const activities = Array.isArray(activitiesData) ? activitiesData : [];
+
   const [search, setSearch] = useState("");
 
   const [filter, setFilter] = useState("all");
@@ -81,7 +90,7 @@ export default function DashboardClient() {
   return (
     <main className="min-h-screen bg-[#f5f5f5] text-black">
       <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
-        <DialogContent className="sm:max-w-2xl rounded-xl border-0 p-0 overflow-hidden">
+        <DialogContent className="sm:max-w-4xl rounded-xl border-0 p-0 overflow-visible max-h-[90vh] overflow-y-auto">
           {selectedLead && (
             <div className="bg-white">
               <DialogHeader className="px-8 pt-8 pb-6 border-b border-black/[0.06]">
@@ -171,6 +180,21 @@ export default function DashboardClient() {
 
                 <div>
                   <p className="text-xs uppercase tracking-wide text-zinc-400 mb-3">
+                    AI Proposal Draft
+                  </p>
+
+                  <div className="border border-black/[0.06] rounded-xl p-5 bg-zinc-50">
+                    <div className="prose prose-zinc max-w-none prose-p:leading-7 prose-p:mb-4 prose-li:mb-2 prose-headings:tracking-tight prose-strong:text-black">
+                      <ReactMarkdown remarkPlugins={[remarkBreaks]}>
+                        {selectedLead.proposal_text ||
+                          "No proposal generated yet"}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-zinc-400 mb-3">
                     Client Message
                   </p>
 
@@ -178,6 +202,36 @@ export default function DashboardClient() {
                     <p className="text-[15px] leading-7 text-zinc-700">
                       {selectedLead.message}
                     </p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-zinc-400 mb-3">
+                    Activity Timeline
+                  </p>
+
+                  <div className="border border-black/[0.06] rounded-xl divide-y divide-black/[0.06]">
+                    {activities.length === 0 ? (
+                      <div className="p-4 text-sm text-zinc-500">
+                        No activities yet
+                      </div>
+                    ) : (
+                      activities.map((activity: any) => (
+                        <div key={activity.id} className="p-4">
+                          <p className="text-sm font-medium">
+                            {activity.activity_type}
+                          </p>
+
+                          <p className="text-sm text-zinc-500 mt-1">
+                            {activity.activity_text}
+                          </p>
+
+                          <p className="text-xs text-zinc-400 mt-2">
+                            {new Date(activity.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -275,7 +329,7 @@ export default function DashboardClient() {
 
         <div className="space-y-4">
           {filteredLeads.map((lead: any, index: number) => {
-            const approved = lead.proposal_status === "Approved";
+            const proposalStatus = lead.proposal_status || "Draft";
 
             return (
               <motion.div
@@ -311,12 +365,16 @@ export default function DashboardClient() {
 
                       <div
                         className={`px-2.5 py-1 rounded-md text-xs ${
-                          approved
+                          proposalStatus === "Approved"
                             ? "bg-green-100 text-green-700"
-                            : "bg-amber-100 text-amber-700"
+                            : proposalStatus === "Sent"
+                              ? "bg-blue-100 text-blue-700"
+                              : proposalStatus === "Closed"
+                                ? "bg-zinc-200 text-zinc-700"
+                                : "bg-amber-100 text-amber-700"
                         }`}
                       >
-                        {approved ? "Approved" : "Draft"}
+                        {proposalStatus}
                       </div>
                     </div>
 
@@ -335,9 +393,17 @@ export default function DashboardClient() {
                     className="flex items-center gap-2 shrink-0"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {approved ? (
+                    {proposalStatus === "Approved" ? (
                       <div className="h-10 px-5 rounded-md bg-green-600 text-white text-sm font-medium flex items-center">
                         Approved
+                      </div>
+                    ) : proposalStatus === "Sent" ? (
+                      <div className="h-10 px-5 rounded-md bg-blue-600 text-white text-sm font-medium flex items-center">
+                        Sent
+                      </div>
+                    ) : proposalStatus === "Closed" ? (
+                      <div className="h-10 px-5 rounded-md bg-zinc-700 text-white text-sm font-medium flex items-center">
+                        Closed
                       </div>
                     ) : (
                       <button
