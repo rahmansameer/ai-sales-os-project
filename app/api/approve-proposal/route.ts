@@ -1,18 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import base from "@/lib/airtable";
+import { NextResponse } from "next/server";
 
-export async function POST(req: NextRequest) {
+import { supabase } from "@/lib/supabase";
+
+export async function POST(request: Request) {
   try {
-    const body = await req.json();
+    const { id } = await request.json();
 
-    await base("Leads").update([
-      {
-        id: body.id,
-        fields: {
-          "Proposal Status": "Approved",
-        },
-      },
-    ]);
+    const { error } = await supabase
+      .from("leads")
+      .update({
+        proposal_status: "Approved",
+      })
+      .eq("id", id);
+
+    if (error) {
+      throw error;
+    }
 
     return NextResponse.json({
       success: true,
@@ -22,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       {
-        success: false,
+        error: "Failed to approve proposal",
       },
       {
         status: 500,
