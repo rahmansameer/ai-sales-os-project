@@ -2,9 +2,9 @@
 
 import useSWR from "swr";
 import { motion } from "framer-motion";
-import { Mail, Trash2 } from "lucide-react";
+import { Mail, Trash2, Search } from "lucide-react";
+
 import { useState } from "react";
-import { Search } from "lucide-react";
 
 import {
   Dialog,
@@ -12,15 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-import { DndContext, closestCenter } from "@dnd-kit/core";
-
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-
-import type { DragEndEvent } from "@dnd-kit/core";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -36,19 +27,6 @@ async function approveProposal(id: string) {
     },
     body: JSON.stringify({
       id,
-    }),
-  });
-}
-
-async function updateLeadStatus(id: string, status: string) {
-  await fetch("/api/update-status", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      id,
-      status,
     }),
   });
 }
@@ -80,22 +58,6 @@ export default function DashboardClient() {
   const approvedCount = leads.filter(
     (lead: any) => lead["Proposal Status"] === "Approved",
   ).length;
-
-  const pipelineColumns = ["New", "Qualified", "Proposal Sent", "Approved"];
-
-  async function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const leadId = String(active.id);
-
-    const newStatus = String(over.id);
-
-    await updateLeadStatus(leadId, newStatus);
-
-    mutate();
-  }
 
   const filteredLeads = leads.filter((lead: any) => {
     const matchesSearch =
@@ -132,11 +94,11 @@ export default function DashboardClient() {
 
               <div className="p-8">
                 <div className="flex items-center gap-2 mb-6">
-                  <div className="px-2.5 py-1 rounded-lg bg-zinc-100 text-xs text-zinc-700">
+                  <div className="px-2.5 py-1 rounded-md bg-zinc-100 text-xs text-zinc-700">
                     {selectedLead.Status}
                   </div>
 
-                  <div className="px-2.5 py-1 rounded-lg bg-zinc-100 text-xs text-zinc-700">
+                  <div className="px-2.5 py-1 rounded-md bg-zinc-100 text-xs text-zinc-700">
                     Score {selectedLead["Lead Score"]}
                   </div>
                 </div>
@@ -243,131 +205,101 @@ export default function DashboardClient() {
           </div>
         </div>
 
-        <DndContext
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            {pipelineColumns.map((column) => {
-              const columnLeads = filteredLeads.filter(
-                (lead: any) => lead.Status === column,
-              );
+        <div className="space-y-4">
+          {filteredLeads.map((lead: any, index: number) => {
+            const approved = lead["Proposal Status"] === "Approved";
 
-              return (
-                <div
-                  key={column}
-                  id={column}
-                  className="bg-[#f0f0f0] rounded-xl p-3 min-h-[400px]"
-                >
-                  <div className="flex items-center justify-between mb-4 px-1">
-                    <h2 className="text-sm font-semibold tracking-tight">
-                      {column}
-                    </h2>
+            return (
+              <motion.div
+                key={lead.id}
+                initial={{
+                  opacity: 0,
+                  y: 8,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                transition={{
+                  delay: index * 0.03,
+                }}
+                onClick={() => setSelectedLead(lead)}
+                className="bg-white border border-black/[0.05] rounded-xl px-6 py-5 cursor-pointer hover:border-black/[0.08] transition-all"
+              >
+                <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-[17px] font-semibold tracking-tight">
+                        {lead.Name}
+                      </h2>
 
-                    <div className="h-6 min-w-6 px-2 rounded-md bg-white border border-black/[0.05] flex items-center justify-center text-xs text-zinc-600">
-                      {columnLeads.length}
+                      <div className="px-2.5 py-1 rounded-md bg-zinc-100 text-xs text-zinc-600">
+                        {lead.Status}
+                      </div>
+
+                      <div className="px-2.5 py-1 rounded-md bg-zinc-100 text-xs text-zinc-600">
+                        Score {lead["Lead Score"] || 0}
+                      </div>
+
+                      <div
+                        className={`px-2.5 py-1 rounded-md text-xs ${
+                          approved
+                            ? "bg-green-100 text-green-700"
+                            : "bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        {approved ? "Approved" : "Draft"}
+                      </div>
                     </div>
+
+                    <div className="flex items-center gap-2 mt-3 text-zinc-500">
+                      <Mail className="w-4 h-4 shrink-0" />
+
+                      <p className="text-sm truncate">{lead.Email}</p>
+                    </div>
+
+                    <p className="mt-5 text-[15px] text-zinc-700 leading-7 max-w-4xl">
+                      {lead.Message}
+                    </p>
                   </div>
 
-                  <SortableContext
-                    items={columnLeads.map((lead: any) => lead.id)}
-                    strategy={verticalListSortingStrategy}
+                  <div
+                    className="flex items-center gap-2 shrink-0"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="space-y-3">
-                      {columnLeads.map((lead: any, index: number) => {
-                        const approved = lead["Proposal Status"] === "Approved";
+                    {approved ? (
+                      <div className="h-10 px-5 rounded-md bg-green-600 text-white text-sm font-medium flex items-center">
+                        Approved
+                      </div>
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          await approveProposal(lead.id);
 
-                        return (
-                          <motion.div
-                            key={lead.id}
-                            initial={{
-                              opacity: 0,
-                              y: 8,
-                            }}
-                            animate={{
-                              opacity: 1,
-                              y: 0,
-                            }}
-                            transition={{
-                              delay: index * 0.03,
-                            }}
-                            onClick={() => setSelectedLead(lead)}
-                            className="bg-white border border-black/[0.05] rounded-xl p-4 cursor-pointer hover:border-black/[0.08] transition-all"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0 flex-1">
-                                <h2 className="text-sm font-semibold tracking-tight">
-                                  {lead.Name}
-                                </h2>
+                          mutate();
+                        }}
+                        className="h-10 px-5 rounded-md bg-black text-white text-sm font-medium hover:opacity-90 transition-all cursor-pointer"
+                      >
+                        Approve
+                      </button>
+                    )}
 
-                                <div className="flex items-center gap-2 mt-2 text-zinc-500">
-                                  <Mail className="w-3.5 h-3.5 shrink-0" />
+                    <button
+                      onClick={async () => {
+                        await deleteLead(lead.id);
 
-                                  <p className="text-xs truncate">
-                                    {lead.Email}
-                                  </p>
-                                </div>
-
-                                <p className="mt-3 text-sm text-zinc-700 leading-6 line-clamp-3">
-                                  {lead.Message}
-                                </p>
-
-                                <div className="flex items-center gap-2 flex-wrap mt-4">
-                                  <div className="px-2 py-1 rounded-md bg-zinc-100 text-[11px] text-zinc-600">
-                                    Score {lead["Lead Score"] || 0}
-                                  </div>
-
-                                  <div
-                                    className={`px-2 py-1 rounded-md text-[11px] ${
-                                      approved
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-amber-100 text-amber-700"
-                                    }`}
-                                  >
-                                    {approved ? "Approved" : "Draft"}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div
-                              className="flex items-center gap-2 mt-4"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {!approved && (
-                                <button
-                                  onClick={async () => {
-                                    await approveProposal(lead.id);
-
-                                    mutate();
-                                  }}
-                                  className="h-9 flex-1 rounded-md bg-black text-white text-sm font-medium hover:opacity-90 transition-all cursor-pointer"
-                                >
-                                  Approve
-                                </button>
-                              )}
-
-                              <button
-                                onClick={async () => {
-                                  await deleteLead(lead.id);
-
-                                  mutate();
-                                }}
-                                className="h-9 w-9 rounded-md border border-black/[0.08] flex items-center justify-center hover:bg-zinc-100 transition-all cursor-pointer"
-                              >
-                                <Trash2 className="w-4 h-4 text-zinc-600" />
-                              </button>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  </SortableContext>
+                        mutate();
+                      }}
+                      className="h-10 w-10 rounded-md border border-black/[0.08] flex items-center justify-center hover:bg-zinc-100 transition-all cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4 text-zinc-600" />
+                    </button>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        </DndContext>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
     </main>
   );
