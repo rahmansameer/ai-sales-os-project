@@ -15,6 +15,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+
 const fetcher = async (url: string) => {
   const res = await fetch(url);
 
@@ -51,8 +53,6 @@ export default function DashboardClient() {
     revalidateOnFocus: true,
   });
 
-  console.log(leads);
-
   const [selectedLead, setSelectedLead] = useState<any>(null);
 
   const { data: activitiesData } = useSWR(
@@ -69,6 +69,38 @@ export default function DashboardClient() {
   const approvedCount = leads.filter(
     (lead: any) => lead.proposal_status === "Approved",
   ).length;
+
+  const sentCount = leads.filter(
+    (lead: any) => lead.proposal_status === "Sent",
+  ).length;
+
+  const closedCount = leads.filter(
+    (lead: any) => lead.proposal_status === "Closed",
+  ).length;
+
+  const highQualityCount = leads.filter(
+    (lead: any) => lead.lead_quality === "High",
+  ).length;
+
+  const chartData = [
+    {
+      name: "Draft",
+      value: leads.filter((lead: any) => lead.proposal_status === "Draft")
+        .length,
+    },
+    {
+      name: "Approved",
+      value: approvedCount,
+    },
+    {
+      name: "Sent",
+      value: sentCount,
+    },
+    {
+      name: "Closed",
+      value: closedCount,
+    },
+  ];
 
   const filteredLeads = leads.filter((lead: any) => {
     const matchesSearch =
@@ -255,7 +287,7 @@ export default function DashboardClient() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
           <div className="bg-white border border-black/[0.05] rounded-xl p-6">
             <p className="text-sm text-zinc-500">Total Leads</p>
 
@@ -273,9 +305,115 @@ export default function DashboardClient() {
           </div>
 
           <div className="bg-white border border-black/[0.05] rounded-xl p-6">
-            <p className="text-sm text-zinc-500">Automation</p>
+            <p className="text-sm text-zinc-500">Sent</p>
 
-            <h2 className="text-4xl font-semibold tracking-tight mt-3">Live</h2>
+            <h2 className="text-4xl font-semibold tracking-tight mt-3">
+              {sentCount}
+            </h2>
+          </div>
+
+          <div className="bg-white border border-black/[0.05] rounded-xl p-6">
+            <p className="text-sm text-zinc-500">Closed</p>
+
+            <h2 className="text-4xl font-semibold tracking-tight mt-3">
+              {closedCount}
+            </h2>
+          </div>
+
+          <div className="bg-white border border-black/[0.05] rounded-xl p-6">
+            <p className="text-sm text-zinc-500">High Quality</p>
+
+            <h2 className="text-4xl font-semibold tracking-tight mt-3">
+              {highQualityCount}
+            </h2>
+          </div>
+        </div>
+
+        <div className="bg-white border border-black/[0.05] rounded-xl p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold tracking-tight">
+              Sales Pipeline
+            </h2>
+
+            <p className="text-sm text-zinc-500">Lead Progress Overview</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="rounded-xl border border-black/[0.06] p-5">
+              <p className="text-sm text-zinc-500">Draft</p>
+
+              <h3 className="text-3xl font-semibold mt-3">
+                {
+                  leads.filter((lead: any) => lead.proposal_status === "Draft")
+                    .length
+                }
+              </h3>
+            </div>
+
+            <div className="rounded-xl border border-green-200 bg-green-50 p-5">
+              <p className="text-sm text-green-700">Approved</p>
+
+              <h3 className="text-3xl font-semibold mt-3 text-green-700">
+                {approvedCount}
+              </h3>
+            </div>
+
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
+              <p className="text-sm text-blue-700">Sent</p>
+
+              <h3 className="text-3xl font-semibold mt-3 text-blue-700">
+                {sentCount}
+              </h3>
+            </div>
+
+            <div className="rounded-xl border border-zinc-300 bg-zinc-100 p-5">
+              <p className="text-sm text-zinc-700">Closed</p>
+
+              <h3 className="text-3xl font-semibold mt-3 text-zinc-700">
+                {closedCount}
+              </h3>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-black/[0.05] rounded-xl p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold tracking-tight">
+              Proposal Analytics
+            </h2>
+
+            <p className="text-sm text-zinc-500">
+              Proposal Status Distribution
+            </p>
+          </div>
+
+          <div className="h-[320px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  dataKey="value"
+                  nameKey="name"
+                  outerRadius={110}
+                >
+                  <Cell fill="#f59e0b" />
+                  <Cell fill="#16a34a" />
+                  <Cell fill="#2563eb" />
+                  <Cell fill="#52525b" />
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="flex flex-wrap gap-3 mt-4">
+            {chartData.map((item) => (
+              <div
+                key={item.name}
+                className="px-3 py-2 rounded-lg bg-zinc-100 text-sm"
+              >
+                {item.name}: {item.value}
+              </div>
+            ))}
           </div>
         </div>
 
