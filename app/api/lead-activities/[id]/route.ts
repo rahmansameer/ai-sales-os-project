@@ -4,32 +4,32 @@ import { supabase } from "@/lib/supabase";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } },
+  context: {
+    params: Promise<{
+      id: string;
+    }>;
+  },
 ) {
-  try {
-    const { data, error } = await supabase
-      .from("lead_activities")
-      .select("*")
-      .eq("lead_id", params.id)
-      .order("created_at", {
-        ascending: false,
-      });
+  const { id } = await context.params;
 
-    if (error) {
-      throw error;
-    }
+  const { data, error } = await supabase
+    .from("lead_activities")
+    .select("*")
+    .eq("lead_id", id)
+    .order("created_at", {
+      ascending: false,
+    });
 
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error(error);
-
+  if (error) {
     return NextResponse.json(
       {
-        error: "Failed to fetch activities",
+        error: error.message,
       },
       {
         status: 500,
       },
     );
   }
+
+  return NextResponse.json(data || []);
 }

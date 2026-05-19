@@ -2,15 +2,25 @@
 
 import useSWR from "swr";
 import { motion } from "framer-motion";
-import { Mail, Trash2, Search } from "lucide-react";
+
+import {
+  Search,
+  Trash2,
+  Mail,
+  ChevronRight,
+  BarChart3,
+  Sparkles,
+} from "lucide-react";
+
+import { useMemo, useState } from "react";
+
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
-
-import { useState } from "react";
 
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -29,9 +39,7 @@ async function approveProposal(id: string) {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      id,
-    }),
+    body: JSON.stringify({ id }),
   });
 }
 
@@ -41,10 +49,33 @@ async function deleteLead(id: string) {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      id,
-    }),
+    body: JSON.stringify({ id }),
   });
+}
+
+function getStatusStyle(status: string) {
+  if (status === "Approved") {
+    return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  }
+
+  if (status === "Sent") {
+    return "bg-blue-50 text-blue-700 border-blue-200";
+  }
+
+  if (status === "Closed") {
+    return "bg-zinc-100 text-zinc-700 border-zinc-200";
+  }
+
+  return "bg-amber-50 text-amber-700 border-amber-200";
+}
+
+function getInitials(name: string) {
+  return name
+    ?.split(" ")
+    ?.map((part: string) => part[0])
+    ?.join("")
+    ?.slice(0, 2)
+    ?.toUpperCase();
 }
 
 export default function DashboardClient() {
@@ -55,16 +86,16 @@ export default function DashboardClient() {
 
   const [selectedLead, setSelectedLead] = useState<any>(null);
 
+  const [search, setSearch] = useState("");
+
+  const [filter, setFilter] = useState("all");
+
   const { data: activitiesData } = useSWR(
     selectedLead ? `/api/lead-activities/${selectedLead.id}` : null,
     fetcher,
   );
 
   const activities = Array.isArray(activitiesData) ? activitiesData : [];
-
-  const [search, setSearch] = useState("");
-
-  const [filter, setFilter] = useState("all");
 
   const approvedCount = leads.filter(
     (lead: any) => lead.proposal_status === "Approved",
@@ -82,141 +113,164 @@ export default function DashboardClient() {
     (lead: any) => lead.lead_quality === "High",
   ).length;
 
+  const draftCount = leads.filter(
+    (lead: any) => lead.proposal_status === "Draft",
+  ).length;
+
   const chartData = [
     {
       name: "Draft",
-      value: leads.filter((lead: any) => lead.proposal_status === "Draft")
-        .length,
+      value: draftCount,
+      color: "#f59e0b",
     },
     {
       name: "Approved",
       value: approvedCount,
+      color: "#10b981",
     },
     {
       name: "Sent",
       value: sentCount,
+      color: "#2563eb",
     },
     {
       name: "Closed",
       value: closedCount,
+      color: "#52525b",
     },
   ];
 
-  const filteredLeads = leads.filter((lead: any) => {
-    const matchesSearch =
-      lead.name?.toLowerCase().includes(search.toLowerCase()) ||
-      lead.email?.toLowerCase().includes(search.toLowerCase()) ||
-      lead.message?.toLowerCase().includes(search.toLowerCase());
+  const filteredLeads = useMemo(() => {
+    return leads.filter((lead: any) => {
+      const matchesSearch =
+        lead.name?.toLowerCase().includes(search.toLowerCase()) ||
+        lead.email?.toLowerCase().includes(search.toLowerCase()) ||
+        lead.message?.toLowerCase().includes(search.toLowerCase());
 
-    if (filter === "approved") {
-      return matchesSearch && lead.proposal_status === "Approved";
-    }
+      if (filter === "approved") {
+        return matchesSearch && lead.proposal_status === "Approved";
+      }
 
-    if (filter === "draft") {
-      return matchesSearch && lead.proposal_status !== "Approved";
-    }
+      if (filter === "draft") {
+        return matchesSearch && lead.proposal_status === "Draft";
+      }
 
-    return matchesSearch;
-  });
+      if (filter === "sent") {
+        return matchesSearch && lead.proposal_status === "Sent";
+      }
+
+      return matchesSearch;
+    });
+  }, [leads, search, filter]);
 
   return (
-    <main className="min-h-screen bg-[#f5f5f5] text-black">
+    <main className="min-h-screen bg-[#f4f6fa] text-black">
       <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
-        <DialogContent className="sm:max-w-4xl rounded-xl border-0 p-0 overflow-visible max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!w-[95vw] !max-w-[1600px] h-[95vh] p-0 border border-black/[0.08] rounded-md overflow-hidden bg-white">
+          <DialogDescription className="sr-only">
+            Lead details and activity timeline
+          </DialogDescription>
+
           {selectedLead && (
-            <div className="bg-white">
-              <DialogHeader className="px-8 pt-8 pb-6 border-b border-black/[0.06]">
-                <DialogTitle className="text-[22px] font-semibold tracking-tight">
-                  {selectedLead.name}
-                </DialogTitle>
+            <div className="w-full h-full flex flex-col xl:flex-row overflow-hidden">
+              <div className="flex-1 min-w-0 h-full overflow-y-auto bg-white">
+                <DialogHeader className="px-8 py-7 border-b border-black/[0.06] bg-white sticky top-0 z-20">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-start justify-between gap-6 flex-wrap">
+                      <div className="min-w-0 flex-1">
+                        <DialogTitle className="text-[26px] font-semibold tracking-tight">
+                          {selectedLead.name}
+                        </DialogTitle>
 
-                <p className="text-sm text-zinc-500 mt-2">
-                  {selectedLead.email}
-                </p>
-              </DialogHeader>
+                        <div className="flex items-center gap-3 mt-3 flex-wrap">
+                          <p className="text-sm text-zinc-500 break-all">
+                            {selectedLead.email}
+                          </p>
 
-              <div className="p-8 space-y-8">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div className="px-2.5 py-1 rounded-md bg-zinc-100 text-xs text-zinc-700">
-                    {selectedLead.status}
+                          <div
+                            className={`h-8 px-3 rounded-md border text-xs font-medium flex items-center shrink-0 ${getStatusStyle(
+                              selectedLead.proposal_status,
+                            )}`}
+                          >
+                            {selectedLead.proposal_status}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </DialogHeader>
+
+                <div className="p-8 xl:p-10 space-y-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4">
+                    {[
+                      {
+                        label: "Lead Quality",
+                        value: selectedLead.lead_quality || "N/A",
+                      },
+                      {
+                        label: "Urgency",
+                        value: selectedLead.urgency || "N/A",
+                      },
+                      {
+                        label: "Buyer Intent",
+                        value: selectedLead.buyer_intent || "N/A",
+                      },
+                      {
+                        label: "Project Size",
+                        value: selectedLead.project_size || "N/A",
+                      },
+                    ].map((item) => (
+                      <div
+                        key={item.label}
+                        className="border border-black/[0.06] bg-[#fafafa] rounded-md p-5 min-w-0"
+                      >
+                        <p className="text-xs uppercase tracking-wide text-zinc-500">
+                          {item.label}
+                        </p>
+
+                        <h3 className="text-[15px] font-semibold mt-4 break-words">
+                          {item.value}
+                        </h3>
+                      </div>
+                    ))}
                   </div>
 
-                  <div className="px-2.5 py-1 rounded-md bg-zinc-100 text-xs text-zinc-700">
-                    Score {selectedLead.lead_score || 0}
-                  </div>
+                  <div className="border border-black/[0.06] rounded-md p-7">
+                    <div className="flex items-center gap-2 mb-6">
+                      <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
 
-                  <div
-                    className={`px-2.5 py-1 rounded-md text-xs ${
-                      selectedLead.proposal_status === "Approved"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-amber-100 text-amber-700"
-                    }`}
-                  >
-                    {selectedLead.proposal_status}
-                  </div>
-                </div>
+                      <h2 className="text-[15px] font-semibold">AI Analysis</h2>
+                    </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="border border-black/[0.06] rounded-xl p-4">
-                    <p className="text-xs text-zinc-400 uppercase tracking-wide">
-                      Lead Quality
-                    </p>
-
-                    <h3 className="mt-2 text-sm font-semibold">
-                      {selectedLead.lead_quality || "N/A"}
-                    </h3>
-                  </div>
-
-                  <div className="border border-black/[0.06] rounded-xl p-4">
-                    <p className="text-xs text-zinc-400 uppercase tracking-wide">
-                      Urgency
-                    </p>
-
-                    <h3 className="mt-2 text-sm font-semibold">
-                      {selectedLead.urgency || "N/A"}
-                    </h3>
-                  </div>
-
-                  <div className="border border-black/[0.06] rounded-xl p-4">
-                    <p className="text-xs text-zinc-400 uppercase tracking-wide">
-                      Buyer Intent
-                    </p>
-
-                    <h3 className="mt-2 text-sm font-semibold">
-                      {selectedLead.buyer_intent || "N/A"}
-                    </h3>
-                  </div>
-
-                  <div className="border border-black/[0.06] rounded-xl p-4">
-                    <p className="text-xs text-zinc-400 uppercase tracking-wide">
-                      Project Size
-                    </p>
-
-                    <h3 className="mt-2 text-sm font-semibold">
-                      {selectedLead.project_size || "N/A"}
-                    </h3>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-zinc-400 mb-3">
-                    AI Analysis
-                  </p>
-
-                  <div className="border border-black/[0.06] rounded-xl p-5">
-                    <p className="text-[15px] leading-7 text-zinc-700">
+                    <p className="text-[15px] leading-8 text-zinc-600 whitespace-pre-wrap break-words">
                       {selectedLead.ai_reason || "No AI analysis available"}
                     </p>
                   </div>
-                </div>
 
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-zinc-400 mb-3">
-                    AI Proposal Draft
-                  </p>
+                  <div className="border border-black/[0.06] rounded-md p-7">
+                    <div className="flex items-center gap-2 mb-6">
+                      <Mail className="w-4 h-4 text-blue-600 shrink-0" />
 
-                  <div className="border border-black/[0.06] rounded-xl p-5 bg-zinc-50">
-                    <div className="prose prose-zinc max-w-none prose-p:leading-7 prose-p:mb-4 prose-li:mb-2 prose-headings:tracking-tight prose-strong:text-black">
+                      <h2 className="text-[15px] font-semibold">
+                        Client Message
+                      </h2>
+                    </div>
+
+                    <p className="text-[15px] leading-8 text-zinc-600 whitespace-pre-wrap break-words">
+                      {selectedLead.message}
+                    </p>
+                  </div>
+
+                  <div className="border border-black/[0.06] rounded-md p-7">
+                    <div className="flex items-center gap-2 mb-6">
+                      <BarChart3 className="w-4 h-4 text-blue-600 shrink-0" />
+
+                      <h2 className="text-[15px] font-semibold">
+                        AI Proposal Draft
+                      </h2>
+                    </div>
+
+                    <div className="prose prose-zinc max-w-none prose-p:leading-8 prose-p:text-[15px] prose-headings:tracking-tight break-words">
                       <ReactMarkdown remarkPlugins={[remarkBreaks]}>
                         {selectedLead.proposal_text ||
                           "No proposal generated yet"}
@@ -224,353 +278,365 @@ export default function DashboardClient() {
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-zinc-400 mb-3">
-                    Client Message
-                  </p>
-
-                  <div className="border border-black/[0.06] rounded-xl p-5">
-                    <p className="text-[15px] leading-7 text-zinc-700">
-                      {selectedLead.message}
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-zinc-400 mb-3">
+              <div className="w-full xl:w-[380px] 2xl:w-[420px] border-t xl:border-t-0 xl:border-l border-black/[0.06] bg-[#fafafa] h-[320px] xl:h-full overflow-y-auto shrink-0">
+                <div className="px-7 py-6 border-b border-black/[0.06] bg-white sticky top-0 z-10">
+                  <h2 className="text-[15px] font-semibold">
                     Activity Timeline
-                  </p>
-
-                  <div className="border border-black/[0.06] rounded-xl divide-y divide-black/[0.06]">
-                    {activities.length === 0 ? (
-                      <div className="p-4 text-sm text-zinc-500">
-                        No activities yet
-                      </div>
-                    ) : (
-                      activities.map((activity: any) => (
-                        <div key={activity.id} className="p-4">
-                          <p className="text-sm font-medium">
-                            {activity.activity_type}
-                          </p>
-
-                          <p className="text-sm text-zinc-500 mt-1">
-                            {activity.activity_text}
-                          </p>
-
-                          <p className="text-xs text-zinc-400 mt-2">
-                            {new Date(activity.created_at).toLocaleString()}
-                          </p>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  </h2>
                 </div>
+
+                {activities.length === 0 ? (
+                  <div className="p-7 text-sm text-zinc-500">
+                    No activities yet
+                  </div>
+                ) : (
+                  activities.map((activity: any, index: number) => (
+                    <div
+                      key={activity.id}
+                      className={`px-7 py-6 ${
+                        index !== activities.length - 1
+                          ? "border-b border-black/[0.05]"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex gap-4">
+                        <div className="pt-2 shrink-0">
+                          <div className="w-2 h-2 rounded-full bg-blue-600" />
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-col gap-3">
+                            <div className="flex items-start justify-between gap-4">
+                              <p className="text-sm font-semibold break-words">
+                                {activity.activity_type}
+                              </p>
+
+                              <p className="text-xs text-zinc-400 whitespace-nowrap shrink-0">
+                                {new Date(
+                                  activity.created_at,
+                                ).toLocaleDateString()}
+                              </p>
+                            </div>
+
+                            <p className="text-sm text-zinc-600 leading-7 break-words">
+                              {activity.activity_text}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      <header className="h-16 border-b border-black/[0.05] bg-white">
-        <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-          <h1 className="text-[17px] font-semibold tracking-tight">
+      <header className="h-16 border-b border-black/[0.06] bg-white sticky top-0 z-30">
+        <div className="max-w-[1600px] mx-auto px-8 h-full flex items-center justify-between">
+          <h1 className="text-[18px] font-semibold tracking-tight">
             Dashboard
           </h1>
 
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500" />
-
-            <p className="text-sm text-zinc-500">System Active</p>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white border border-black/[0.05] rounded-xl p-6">
-            <p className="text-sm text-zinc-500">Total Leads</p>
-
-            <h2 className="text-4xl font-semibold tracking-tight mt-3">
-              {leads.length}
-            </h2>
-          </div>
-
-          <div className="bg-white border border-black/[0.05] rounded-xl p-6">
-            <p className="text-sm text-zinc-500">Approved</p>
-
-            <h2 className="text-4xl font-semibold tracking-tight mt-3">
-              {approvedCount}
-            </h2>
-          </div>
-
-          <div className="bg-white border border-black/[0.05] rounded-xl p-6">
-            <p className="text-sm text-zinc-500">Sent</p>
-
-            <h2 className="text-4xl font-semibold tracking-tight mt-3">
-              {sentCount}
-            </h2>
-          </div>
-
-          <div className="bg-white border border-black/[0.05] rounded-xl p-6">
-            <p className="text-sm text-zinc-500">Closed</p>
-
-            <h2 className="text-4xl font-semibold tracking-tight mt-3">
-              {closedCount}
-            </h2>
-          </div>
-
-          <div className="bg-white border border-black/[0.05] rounded-xl p-6">
-            <p className="text-sm text-zinc-500">High Quality</p>
-
-            <h2 className="text-4xl font-semibold tracking-tight mt-3">
-              {highQualityCount}
-            </h2>
-          </div>
-        </div>
-
-        <div className="bg-white border border-black/[0.05] rounded-xl p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold tracking-tight">
-              Sales Pipeline
-            </h2>
-
-            <p className="text-sm text-zinc-500">Lead Progress Overview</p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="rounded-xl border border-black/[0.06] p-5">
-              <p className="text-sm text-zinc-500">Draft</p>
-
-              <h3 className="text-3xl font-semibold mt-3">
-                {
-                  leads.filter((lead: any) => lead.proposal_status === "Draft")
-                    .length
-                }
-              </h3>
-            </div>
-
-            <div className="rounded-xl border border-green-200 bg-green-50 p-5">
-              <p className="text-sm text-green-700">Approved</p>
-
-              <h3 className="text-3xl font-semibold mt-3 text-green-700">
-                {approvedCount}
-              </h3>
-            </div>
-
-            <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
-              <p className="text-sm text-blue-700">Sent</p>
-
-              <h3 className="text-3xl font-semibold mt-3 text-blue-700">
-                {sentCount}
-              </h3>
-            </div>
-
-            <div className="rounded-xl border border-zinc-300 bg-zinc-100 p-5">
-              <p className="text-sm text-zinc-700">Closed</p>
-
-              <h3 className="text-3xl font-semibold mt-3 text-zinc-700">
-                {closedCount}
-              </h3>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-black/[0.05] rounded-xl p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold tracking-tight">
-              Proposal Analytics
-            </h2>
-
-            <p className="text-sm text-zinc-500">
-              Proposal Status Distribution
-            </p>
-          </div>
-
-          <div className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  dataKey="value"
-                  nameKey="name"
-                  outerRadius={110}
-                >
-                  <Cell fill="#f59e0b" />
-                  <Cell fill="#16a34a" />
-                  <Cell fill="#2563eb" />
-                  <Cell fill="#52525b" />
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="flex flex-wrap gap-3 mt-4">
-            {chartData.map((item) => (
-              <div
-                key={item.name}
-                className="px-3 py-2 rounded-lg bg-zinc-100 text-sm"
-              >
-                {item.name}: {item.value}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-6">
-          <div className="relative w-full lg:max-w-sm">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" />
 
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search leads..."
-              className="w-full h-11 bg-white border border-black/[0.06] rounded-lg pl-10 pr-4 text-sm outline-none focus:border-black/[0.12]"
+              className="h-10 w-[280px] bg-[#f7f7f8] border border-black/[0.06] rounded-md pl-11 pr-4 text-sm outline-none focus:border-blue-500"
             />
           </div>
+        </div>
+      </header>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setFilter("all")}
-              className={`h-10 px-4 rounded-lg text-sm transition-all cursor-pointer ${
-                filter === "all"
-                  ? "bg-black text-white"
-                  : "bg-white border border-black/[0.06]"
-              }`}
+      <div className="max-w-[1600px] mx-auto px-8 py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+          {[
+            {
+              label: "Total Leads",
+              value: leads.length,
+            },
+            {
+              label: "Approved",
+              value: approvedCount,
+            },
+            {
+              label: "Sent",
+              value: sentCount,
+            },
+            {
+              label: "Closed",
+              value: closedCount,
+            },
+            {
+              label: "High Quality",
+              value: highQualityCount,
+            },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="bg-white border border-black/[0.06] rounded-md p-5"
             >
-              All
-            </button>
+              <p className="text-sm text-zinc-500">{item.label}</p>
 
-            <button
-              onClick={() => setFilter("approved")}
-              className={`h-10 px-4 rounded-lg text-sm transition-all cursor-pointer ${
-                filter === "approved"
-                  ? "bg-black text-white"
-                  : "bg-white border border-black/[0.06]"
-              }`}
-            >
-              Approved
-            </button>
-
-            <button
-              onClick={() => setFilter("draft")}
-              className={`h-10 px-4 rounded-lg text-sm transition-all cursor-pointer ${
-                filter === "draft"
-                  ? "bg-black text-white"
-                  : "bg-white border border-black/[0.06]"
-              }`}
-            >
-              Draft
-            </button>
-          </div>
+              <h2 className="text-[32px] font-semibold tracking-tight mt-5">
+                {item.value}
+              </h2>
+            </div>
+          ))}
         </div>
 
-        <div className="space-y-4">
-          {filteredLeads.map((lead: any, index: number) => {
-            const proposalStatus = lead.proposal_status || "Draft";
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-6 mt-6">
+          <div className="bg-white border border-black/[0.06] rounded-md overflow-hidden min-w-0">
+            <div className="px-6 py-5 border-b border-black/[0.06] flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <h2 className="text-[15px] font-semibold">Leads</h2>
 
-            return (
-              <motion.div
-                key={lead.id}
-                initial={{
-                  opacity: 0,
-                  y: 8,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                transition={{
-                  delay: index * 0.03,
-                }}
-                onClick={() => setSelectedLead(lead)}
-                className="bg-white border border-black/[0.05] rounded-xl px-6 py-5 cursor-pointer hover:border-black/[0.08] transition-all"
-              >
-                <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-[17px] font-semibold tracking-tight">
-                        {lead.name}
-                      </h2>
+                <p className="text-sm text-zinc-500 mt-1">
+                  Manage leads and proposals
+                </p>
+              </div>
 
-                      <div className="px-2.5 py-1 rounded-md bg-zinc-100 text-xs text-zinc-600">
-                        {lead.status}
-                      </div>
-
-                      <div className="px-2.5 py-1 rounded-md bg-zinc-100 text-xs text-zinc-600">
-                        Score {lead.lead_score || 0}
-                      </div>
-
-                      <div
-                        className={`px-2.5 py-1 rounded-md text-xs ${
-                          proposalStatus === "Approved"
-                            ? "bg-green-100 text-green-700"
-                            : proposalStatus === "Sent"
-                              ? "bg-blue-100 text-blue-700"
-                              : proposalStatus === "Closed"
-                                ? "bg-zinc-200 text-zinc-700"
-                                : "bg-amber-100 text-amber-700"
-                        }`}
-                      >
-                        {proposalStatus}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-3 text-zinc-500">
-                      <Mail className="w-4 h-4 shrink-0" />
-
-                      <p className="text-sm truncate">{lead.email}</p>
-                    </div>
-
-                    <p className="mt-5 text-[15px] text-zinc-700 leading-7 max-w-4xl">
-                      {lead.message}
-                    </p>
-                  </div>
-
-                  <div
-                    className="flex items-center gap-2 shrink-0"
-                    onClick={(e) => e.stopPropagation()}
+              <div className="flex items-center gap-2 flex-wrap">
+                {["all", "approved", "draft", "sent"].map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => setFilter(item)}
+                    className={`h-9 px-4 rounded-md text-sm font-medium capitalize transition-all ${
+                      filter === item
+                        ? "bg-black text-white"
+                        : "bg-[#f7f7f8] border border-black/[0.06] text-zinc-600"
+                    }`}
                   >
-                    {proposalStatus === "Approved" ? (
-                      <div className="h-10 px-5 rounded-md bg-green-600 text-white text-sm font-medium flex items-center">
-                        Approved
-                      </div>
-                    ) : proposalStatus === "Sent" ? (
-                      <div className="h-10 px-5 rounded-md bg-blue-600 text-white text-sm font-medium flex items-center">
-                        Sent
-                      </div>
-                    ) : proposalStatus === "Closed" ? (
-                      <div className="h-10 px-5 rounded-md bg-zinc-700 text-white text-sm font-medium flex items-center">
-                        Closed
-                      </div>
-                    ) : (
-                      <button
-                        onClick={async () => {
-                          await approveProposal(lead.id);
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                          mutate();
-                        }}
-                        className="h-10 px-5 rounded-md bg-black text-white text-sm font-medium hover:opacity-90 transition-all cursor-pointer"
-                      >
-                        Approve
-                      </button>
+            <div className="overflow-x-auto min-w-0">
+              <table className="w-full min-w-[1100px]">
+                <thead className="bg-[#fafafa] border-b border-black/[0.06]">
+                  <tr>
+                    {["Lead", "Status", "Score", "Quality", "Actions"].map(
+                      (item) => (
+                        <th
+                          key={item}
+                          className="text-left px-6 py-4 text-xs font-medium text-zinc-500 uppercase tracking-wide"
+                        >
+                          {item}
+                        </th>
+                      ),
                     )}
+                  </tr>
+                </thead>
 
-                    <button
-                      onClick={async () => {
-                        await deleteLead(lead.id);
+                <tbody>
+                  {filteredLeads.map((lead: any, index: number) => {
+                    const proposalStatus = lead.proposal_status || "Draft";
 
-                        mutate();
-                      }}
-                      className="h-10 w-10 rounded-md border border-black/[0.08] flex items-center justify-center hover:bg-zinc-100 transition-all cursor-pointer"
+                    return (
+                      <motion.tr
+                        key={lead.id}
+                        initial={{
+                          opacity: 0,
+                          y: 4,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                        }}
+                        transition={{
+                          delay: index * 0.01,
+                        }}
+                        onClick={() => setSelectedLead(lead)}
+                        className="border-b border-black/[0.05] hover:bg-[#fafafa] transition-all cursor-pointer"
+                      >
+                        <td className="px-6 py-5">
+                          <div className="flex items-start gap-4">
+                            <div className="w-11 h-11 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center text-sm font-semibold shrink-0">
+                              {getInitials(lead.name)}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <h3 className="text-sm font-semibold">
+                                {lead.name}
+                              </h3>
+
+                              <div className="flex items-center gap-2 mt-2 text-zinc-500">
+                                <Mail className="w-4 h-4 shrink-0" />
+
+                                <p className="text-sm truncate">{lead.email}</p>
+                              </div>
+
+                              <p className="text-sm text-zinc-500 leading-7 mt-3 max-w-[520px] line-clamp-2">
+                                {lead.message}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <div
+                            className={`h-8 px-3 rounded-md border text-xs font-medium flex items-center w-fit ${getStatusStyle(
+                              proposalStatus,
+                            )}`}
+                          >
+                            {proposalStatus}
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <p className="text-sm font-medium">
+                            {lead.lead_score || 0}
+                          </p>
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <p className="text-sm text-zinc-600">
+                            {lead.lead_quality || "N/A"}
+                          </p>
+                        </td>
+
+                        <td
+                          className="px-6 py-5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center gap-2">
+                            {proposalStatus === "Draft" ? (
+                              <button
+                                onClick={async () => {
+                                  await approveProposal(lead.id);
+
+                                  mutate();
+                                }}
+                                className="h-9 px-4 rounded-md bg-black text-white text-sm font-medium"
+                              >
+                                Approve
+                              </button>
+                            ) : (
+                              <div
+                                className={`h-9 px-4 rounded-md border text-sm font-medium flex items-center ${getStatusStyle(
+                                  proposalStatus,
+                                )}`}
+                              >
+                                {proposalStatus}
+                              </div>
+                            )}
+
+                            <button
+                              onClick={async () => {
+                                await deleteLead(lead.id);
+
+                                mutate();
+                              }}
+                              className="h-9 w-9 rounded-md border border-black/[0.06] flex items-center justify-center hover:bg-zinc-100"
+                            >
+                              <Trash2 className="w-4 h-4 text-zinc-600" />
+                            </button>
+
+                            <div className="h-9 w-9 rounded-md bg-[#f7f7f8] flex items-center justify-center">
+                              <ChevronRight className="w-4 h-4 text-zinc-500" />
+                            </div>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="space-y-6 min-w-0">
+            <div className="bg-white border border-black/[0.06] rounded-md p-6">
+              <div className="mb-6">
+                <h2 className="text-[15px] font-semibold">
+                  Proposal Analytics
+                </h2>
+
+                <p className="text-sm text-zinc-500 mt-1">
+                  Distribution overview
+                </p>
+              </div>
+
+              <div className="h-[220px] w-full overflow-hidden">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={65}
+                      outerRadius={88}
+                      paddingAngle={4}
                     >
-                      <Trash2 className="w-4 h-4 text-zinc-600" />
-                    </button>
+                      {chartData.map((item, index) => (
+                        <Cell key={index} fill={item.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="space-y-3 mt-4">
+                {chartData.map((item) => (
+                  <div
+                    key={item.name}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{
+                          backgroundColor: item.color,
+                        }}
+                      />
+
+                      <p className="text-sm text-zinc-600">{item.name}</p>
+                    </div>
+
+                    <p className="text-sm font-semibold">{item.value}</p>
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white border border-black/[0.06] rounded-md overflow-hidden">
+              <div className="px-6 py-5 border-b border-black/[0.06]">
+                <h2 className="text-[15px] font-semibold">Pipeline</h2>
+              </div>
+
+              <div className="divide-y divide-black/[0.06]">
+                {chartData.map((item) => (
+                  <div
+                    key={item.name}
+                    className="px-6 py-5 flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="text-sm text-zinc-500">{item.name}</p>
+
+                      <h3 className="text-xl font-semibold mt-2">
+                        {item.value}
+                      </h3>
+                    </div>
+
+                    <div
+                      className="w-10 h-10 rounded-md"
+                      style={{
+                        backgroundColor: `${item.color}20`,
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
