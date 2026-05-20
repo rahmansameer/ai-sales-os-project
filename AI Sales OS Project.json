@@ -1,0 +1,1357 @@
+{
+  "name": "AI Sales OS Project",
+  "nodes": [
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        912
+      ],
+      "id": "e1b3b3b1-871b-43cb-b716-e4fd0416469b",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "hAp1YAW0nZDl6TbZ",
+          "name": "Groq"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-capture",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        320,
+        688
+      ],
+      "id": "aac6e339-ef65-44c2-89f5-862a61064457",
+      "name": "Lead Webhook",
+      "webhookId": "d0126af7-e849-4d47-8652-872c1a778269"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let aiText = $json.text;\n\naiText = aiText.replace(/```json/g, '');\naiText = aiText.replace(/```/g, '');\n\nconst parsed = JSON.parse(aiText);\n\nreturn parsed;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        688
+      ],
+      "id": "4c2dc63f-6672-4272-85de-0fd947595aed",
+      "name": "Parse AI JSON"
+    },
+    {
+      "parameters": {
+        "chatId": "6450354561",
+        "text": "=New AI Qualified Lead\n\nName: {{ $('Lead Webhook').item.json.body.name }}\n\nCompany: {{ $('Lead Webhook').item.json.body.company }}\n\nLead Score: {{ $('Parse AI JSON').item.json.lead_score }}\n\nLead Quality: {{ $('Parse AI JSON').item.json.lead_quality }}\n\nService: {{ $('Parse AI JSON').item.json.service }}\n\nAI Summary:\n{{ $('Parse AI JSON').item.json.summary }}\n\n-------------------\n\nAI Email Reply:\n\n{{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1904,
+        1072
+      ],
+      "id": "cbf156e0-8a03-4a20-b843-3939999f4801",
+      "name": "Telegram Alert",
+      "webhookId": "0b3f21b6-02b8-4c26-91b1-7f2192ca1cb3",
+      "credentials": {
+        "telegramApi": {
+          "id": "jEa0W6J7lhhKj9eC",
+          "name": "Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional AI automation agency sales assistant.\n\nGenerate a professional sales email reply.\n\nLead Info:\n\nName: {{ $('Lead Webhook').item.json.body.name }}\n\nCompany: {{ $('Lead Webhook').item.json.body.company }}\n\nRequested Service: {{ $('Parse AI JSON').item.json.service }}\n\nLead Summary: {{ $('Parse AI JSON').item.json.summary }}\n\nRules:\n- Keep it short\n- Friendly and professional\n- No markdown\n- No placeholders\n- Do NOT include subject line\n- Only return the email body\n- End naturally",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1552,
+        1072
+      ],
+      "id": "1a7cf48c-e839-4072-9519-1e350df450ad",
+      "name": "AI Email Writer"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1632,
+        1296
+      ],
+      "id": "6ce915ee-d3a5-4981-a5ea-ea59ec71dff8",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "hAp1YAW0nZDl6TbZ",
+          "name": "Groq"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Lead Webhook').item.json.body.email }}",
+        "subject": "Thanks for contacting us",
+        "emailType": "text",
+        "message": "={{ $('AI Email Writer').item.json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2128,
+        1072
+      ],
+      "id": "03ceb1a7-3105-44dc-b44a-ddc9b0f45b9f",
+      "name": "Send AI Email",
+      "webhookId": "ac7a5618-833d-47ff-aebb-3dd1fdc39980",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Q5SKw35Quu9zeER7",
+          "name": "Gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a senior AI sales qualification agent.\n\nYour only job is to qualify inbound leads.\n\nAnalyze:\n- buyer intent\n- urgency\n- business maturity\n- potential project size\n- seriousness level\n\nAlso generate a lead score from 0-100.\n\nScoring logic:\n- Higher urgency = higher score\n- Strong buyer intent = higher score\n- Bigger project size = higher score\n- Serious business inquiry = higher score\n\nReturn ONLY valid JSON.\n\nFormat:\n\n{\n  \"lead_quality\": \"High\",\n  \"urgency\": \"High\",\n  \"project_size\": \"Medium\",\n  \"buyer_intent\": \"Strong\",\n  \"lead_score\": 82,\n  \"reason\": \"Business is actively looking for AI automation\"\n}\n\nLead Data:\n\nName: {{ $('Lead Webhook').item.json.body.name }}\n\nCompany: {{ $('Lead Webhook').item.json.body.company }}\n\nMessage: {{ $('Lead Webhook').item.json.body.message }}",
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        992,
+        688
+      ],
+      "id": "7579b3c9-5e7f-44af-9bd9-9b2f4a0495cf",
+      "name": "Lead Qualification Agent"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const aiText = $json.text;\n\nconst parsed = JSON.parse(aiText);\n\nreturn parsed;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        688
+      ],
+      "id": "05d337f8-651b-468b-964f-56b6b145895c",
+      "name": "Parse Sales Strategy"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        912
+      ],
+      "id": "dce41ed8-0af2-4205-a239-c57885bc9d19",
+      "name": "Groq Chat Model2",
+      "credentials": {
+        "groqApi": {
+          "id": "hAp1YAW0nZDl6TbZ",
+          "name": "Groq"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a senior AI sales strategist.\n\nBased on the lead qualification data, decide the best sales approach.\n\nReturn ONLY valid JSON.\n\nFormat:\n\n{\n  \"priority\": \"High\",\n  \"recommended_action\": \"Book Sales Call\",\n  \"sales_approach\": \"Direct Consultation\",\n  \"response_speed\": \"Immediate\"\n}\n\nLead Qualification Data:\n\n{{ JSON.stringify($json) }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1568,
+        688
+      ],
+      "id": "b1221c3f-7898-425c-87e7-2da37572b7f0",
+      "name": "Sales Strategy Agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional AI automation consultant.\n\nUse the provided company knowledge to create a smart proposal.\n\nInclude:\n- client problem\n- proposed solution\n- expected outcome\n- estimated timeline\n- call invitation\n\nKeep it concise and professional.\n\nCurrent Lead Data:\n{{ JSON.stringify($('Parse Sales Strategy').item.json) }}\n\nPrevious Memory:\n{{ JSON.stringify($('Retrieve Lead Memory').item.json) }}\n\nCompany Knowledge:\n{{ JSON.stringify($('Retrieve Knowledge Base').item.json) }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        528,
+        1072
+      ],
+      "id": "ccaa3694-243a-4910-b46c-0e104ce44717",
+      "name": "Proposal Generator Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        608,
+        1296
+      ],
+      "id": "7557d72f-1685-4c6c-952b-882c704923b6",
+      "name": "Groq Chat Model3",
+      "credentials": {
+        "groqApi": {
+          "id": "hAp1YAW0nZDl6TbZ",
+          "name": "Groq"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "6450354561",
+        "text": "=📄 AI Proposal Draft\n\n{{ $json.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1104,
+        1072
+      ],
+      "id": "24ed7ec5-d2a9-45a4-87fd-f2ed5eff1fba",
+      "name": "Send a text message",
+      "webhookId": "1e96ddef-a7ff-4466-8dd7-8253164287ed",
+      "credentials": {
+        "telegramApi": {
+          "id": "jEa0W6J7lhhKj9eC",
+          "name": "Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "apprfRXkGgL3F1FfR",
+          "mode": "list",
+          "cachedResultName": "AI Business OS CRM",
+          "cachedResultUrl": "https://airtable.com/apprfRXkGgL3F1FfR"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblsUwzcyCzQ1lHZM",
+          "mode": "list",
+          "cachedResultName": "Lead Memory",
+          "cachedResultUrl": "https://airtable.com/apprfRXkGgL3F1FfR/tblsUwzcyCzQ1lHZM"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Lead Email": "={{ $('Lead Webhook').item.json.body.email }}",
+            "Memory Type": "Proposal",
+            "Memory Content": "={{ $json.text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Lead Email",
+              "displayName": "Lead Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Memory Type",
+              "displayName": "Memory Type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Memory Content",
+              "displayName": "Memory Content",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Created",
+              "displayName": "Created",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        1072
+      ],
+      "id": "ec2777a2-8095-450a-879a-fcf36607c095",
+      "name": "Store Proposal Memory",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "35GIKeuxY85vpnuJ",
+          "name": "Airtable"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "apprfRXkGgL3F1FfR",
+          "mode": "list",
+          "cachedResultName": "AI Business OS CRM",
+          "cachedResultUrl": "https://airtable.com/apprfRXkGgL3F1FfR"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblsUwzcyCzQ1lHZM",
+          "mode": "list",
+          "cachedResultName": "Lead Memory",
+          "cachedResultUrl": "https://airtable.com/apprfRXkGgL3F1FfR/tblsUwzcyCzQ1lHZM"
+        },
+        "filterByFormula": "={Lead Email} = '{{ $('Lead Webhook').item.json.body.email }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        2144,
+        688
+      ],
+      "id": "5d444316-a91f-4999-87aa-fddb68dcb7a7",
+      "name": "Retrieve Lead Memory",
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "35GIKeuxY85vpnuJ",
+          "name": "Airtable"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "apprfRXkGgL3F1FfR",
+          "mode": "list",
+          "cachedResultName": "AI Business OS CRM",
+          "cachedResultUrl": "https://airtable.com/apprfRXkGgL3F1FfR"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblH8PsTo0fUrKOfE",
+          "mode": "list",
+          "cachedResultName": "Knowledge Base",
+          "cachedResultUrl": "https://airtable.com/apprfRXkGgL3F1FfR/tblH8PsTo0fUrKOfE"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        304,
+        1072
+      ],
+      "id": "56cacde6-214d-4246-b8f7-97189bd445bb",
+      "name": "Retrieve Knowledge Base",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "35GIKeuxY85vpnuJ",
+          "name": "Airtable"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "leads",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "name",
+              "fieldValue": "={{ $json.body.name }}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $json.body.email }}"
+            },
+            {
+              "fieldId": "company",
+              "fieldValue": "={{ $json.body.company }}"
+            },
+            {
+              "fieldId": "message",
+              "fieldValue": "={{ $json.body.message }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "New"
+            },
+            {
+              "fieldId": "lead_score",
+              "fieldValue": "0"
+            },
+            {
+              "fieldId": "proposal_status",
+              "fieldValue": "Draft"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        544,
+        688
+      ],
+      "id": "d4582f68-251e-42ff-aa85-7fc702db3d2b",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "UI96MtPNcbV6KIIn",
+          "name": "ai-sales-os"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create a row').item.json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "proposal_status",
+              "fieldValue": "Draft"
+            },
+            {
+              "fieldId": "lead_quality",
+              "fieldValue": "={{ $('Parse AI JSON').item.json.lead_quality }}"
+            },
+            {
+              "fieldId": "urgency",
+              "fieldValue": "={{ $('Parse AI JSON').item.json.urgency }}"
+            },
+            {
+              "fieldId": "buyer_intent",
+              "fieldValue": "={{ $('Parse AI JSON').item.json.buyer_intent }}"
+            },
+            {
+              "fieldId": "project_size",
+              "fieldValue": "={{ $('Parse AI JSON').item.json.project_size }}"
+            },
+            {
+              "fieldId": "ai_reason",
+              "fieldValue": "={{ $('Parse AI JSON').item.json.reason }}"
+            },
+            {
+              "fieldId": "proposal_text",
+              "fieldValue": "={{ $('Proposal Generator Agent').item.json.text }}"
+            },
+            {
+              "fieldId": "lead_score",
+              "fieldValue": "={{ $('Parse AI JSON').item.json.lead_score }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        1072
+      ],
+      "id": "ffd6d46d-c3e6-46fb-9006-d19d3ed26d02",
+      "name": "Update Lead With AI",
+      "credentials": {
+        "supabaseApi": {
+          "id": "UI96MtPNcbV6KIIn",
+          "name": "ai-sales-os"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "lead_activities",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "lead_id",
+              "fieldValue": "={{ $('Create a row').item.json.id }}"
+            },
+            {
+              "fieldId": "activity_type",
+              "fieldValue": "lead_created"
+            },
+            {
+              "fieldId": "activity_text",
+              "fieldValue": "New lead entered the system"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        768,
+        688
+      ],
+      "id": "5f68e40f-a93d-46ef-95df-dcc2f02cc087",
+      "name": "Create Lead Activity",
+      "credentials": {
+        "supabaseApi": {
+          "id": "UI96MtPNcbV6KIIn",
+          "name": "ai-sales-os"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "Your AI Automation Proposal",
+        "emailType": "text",
+        "message": "=Hello {{ $json.name }}\n\nThank you for your interest.\n\nWe reviewed your requirements and prepared a proposal for your business automation needs.\n\nOur team would love to discuss the next steps with you.\n\nBest regards,\nSameer",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        736,
+        1520
+      ],
+      "id": "70e238b4-eccc-4f0f-a107-8ec91cda97e3",
+      "name": "Send Approved Proposal",
+      "webhookId": "57669010-9109-43fa-b903-d7211cc7c51c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Q5SKw35Quu9zeER7",
+          "name": "Gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "approve-proposal",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        288,
+        1520
+      ],
+      "id": "624a8bfa-6fc6-4d7a-9694-857ce869beda",
+      "name": "Webhook",
+      "webhookId": "554b0bc1-d265-4f49-a224-6f6bfd97c12c"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $('Webhook').item.json.body.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        512,
+        1520
+      ],
+      "id": "02026b8a-fa81-4139-a8ca-2e24562f2e12",
+      "name": "Get a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "UI96MtPNcbV6KIIn",
+          "name": "ai-sales-os"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get a row').item.json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "proposal_status",
+              "fieldValue": "Sent"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        944,
+        1520
+      ],
+      "id": "d79dbd4c-7a47-44a2-8a6b-22f538963f16",
+      "name": "Update a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "UI96MtPNcbV6KIIn",
+          "name": "ai-sales-os"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        1248,
+        1520
+      ],
+      "id": "b91e613e-b0be-4a43-a1d4-12677ca8a9ba",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "apprfRXkGgL3F1FfR",
+          "mode": "list",
+          "cachedResultName": "AI Business OS CRM",
+          "cachedResultUrl": "https://airtable.com/apprfRXkGgL3F1FfR"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblA95vQ7rJICMAG1",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://airtable.com/apprfRXkGgL3F1FfR/tblA95vQ7rJICMAG1"
+        },
+        "filterByFormula": "{Follow Up Status} = 'Pending'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        1456,
+        1520
+      ],
+      "id": "af4da9c4-2b5c-4b23-a9d3-4526b29a4e15",
+      "name": "Find Pending Leads",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "35GIKeuxY85vpnuJ",
+          "name": "Airtable"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional sales assistant.\n\nWrite a short follow-up email.\n\nLead Name: {{ $json.fields.Name }}\n\nCompany: {{ $json.fields.Company }}\n\nOriginal Request:\n{{ $json.fields.Message }}\n\nRules:\n- Friendly\n- Short\n- Human sounding\n- Ask if they are still interested\n- No subject line",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1664,
+        1520
+      ],
+      "id": "dff0c599-d3c2-4507-9bd3-241fdc32d6e5",
+      "name": "AI Follow Up Writer"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Find Pending Leads').item.json.fields.Email }}",
+        "subject": "Following up on your inquiry",
+        "message": "={{ $('AI Follow Up Writer').item.json.text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2016,
+        1520
+      ],
+      "id": "04c62759-6949-4589-80c6-2ffccc252290",
+      "name": "Send Follow Up Email",
+      "webhookId": "7778d40f-c871-4079-887c-e432ccd2ffbc",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Q5SKw35Quu9zeER7",
+          "name": "Gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "apprfRXkGgL3F1FfR",
+          "mode": "list",
+          "cachedResultName": "AI Business OS CRM",
+          "cachedResultUrl": "https://airtable.com/apprfRXkGgL3F1FfR"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblA95vQ7rJICMAG1",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://airtable.com/apprfRXkGgL3F1FfR/tblA95vQ7rJICMAG1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Find Pending Leads').item.json.id }}",
+            "Follow Up Status": "Sent",
+            "Follow Up Count": 1
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "New",
+                  "value": "New"
+                },
+                {
+                  "name": "Qualified",
+                  "value": "Qualified"
+                },
+                {
+                  "name": "Closed",
+                  "value": "Closed"
+                },
+                {
+                  "name": "Done",
+                  "value": "Done"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Lead Score",
+              "displayName": "Lead Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Service Type",
+              "displayName": "Service Type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Lead Quality",
+              "displayName": "Lead Quality",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "High",
+                  "value": "High"
+                },
+                {
+                  "name": "Medium",
+                  "value": "Medium"
+                },
+                {
+                  "name": "Low",
+                  "value": "Low"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "AI Summary",
+              "displayName": "AI Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Follow Up Status",
+              "displayName": "Follow Up Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                },
+                {
+                  "name": "Sent",
+                  "value": "Sent"
+                },
+                {
+                  "name": "Replied",
+                  "value": "Replied"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Follow Up Count",
+              "displayName": "Follow Up Count",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Last Follow Up",
+              "displayName": "Last Follow Up",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        1520
+      ],
+      "id": "1453bfe1-54cf-4f41-a69b-319b9005656b",
+      "name": "Update record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "35GIKeuxY85vpnuJ",
+          "name": "Airtable"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1616,
+        1728
+      ],
+      "id": "6d8e4bd6-8495-4d6b-96e5-c70e41c4c277",
+      "name": "Groq Chat Model4",
+      "credentials": {
+        "groqApi": {
+          "id": "hAp1YAW0nZDl6TbZ",
+          "name": "Groq"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Lead Qualification Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Webhook": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI JSON": {
+      "main": [
+        [
+          {
+            "node": "Sales Strategy Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Email Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Email Writer": {
+      "main": [
+        [
+          {
+            "node": "Telegram Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Alert": {
+      "main": [
+        [
+          {
+            "node": "Send AI Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Qualification Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse AI JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Sales Strategy": {
+      "main": [
+        [
+          {
+            "node": "Retrieve Lead Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Sales Strategy Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sales Strategy Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse Sales Strategy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Proposal Generator Agent": {
+      "main": [
+        [
+          {
+            "node": "Store Proposal Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Proposal Generator Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Update Lead With AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Proposal Memory": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Lead Memory": {
+      "main": [
+        [
+          {
+            "node": "Retrieve Knowledge Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Knowledge Base": {
+      "main": [
+        [
+          {
+            "node": "Proposal Generator Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "Create Lead Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead With AI": {
+      "main": [
+        [
+          {
+            "node": "AI Email Writer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Lead Activity": {
+      "main": [
+        [
+          {
+            "node": "Lead Qualification Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Approved Proposal": {
+      "main": [
+        [
+          {
+            "node": "Update a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "Send Approved Proposal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Find Pending Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Pending Leads": {
+      "main": [
+        [
+          {
+            "node": "AI Follow Up Writer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Follow Up Writer": {
+      "main": [
+        [
+          {
+            "node": "Send Follow Up Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Follow Up Email": {
+      "main": [
+        [
+          {
+            "node": "Update record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Follow Up Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "StPpqHOE6OKBz20G",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "abcc0fc4-09ba-4dd3-842d-b6c91ab65289",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d703d0145caf824abd621d4502cb9874dcc28ce0caa92d308775a946af0d518a"
+  },
+  "id": "t70ynzyPBnsqZSre",
+  "tags": []
+}
