@@ -490,7 +490,3 @@ Built using:
 - Gmail
 - Tailwind CSS
 - Recharts
-
-## License
-
-MIT
