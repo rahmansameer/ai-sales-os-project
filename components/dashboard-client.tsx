@@ -166,42 +166,40 @@ export default function DashboardClient() {
   return (
     <main className="min-h-screen bg-[#f4f6fa] text-black">
       <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
-        <DialogContent className="!w-[95vw] !max-w-[1600px] h-[95vh] p-0 border border-black/[0.08] rounded-md overflow-hidden bg-white">
+        <DialogContent className="!w-[95vw] !max-w-[1100px] max-h-[92vh] p-0 border border-black/[0.08] rounded-lg overflow-hidden bg-white flex flex-col">
           <DialogDescription className="sr-only">
             Lead details and activity timeline
           </DialogDescription>
 
           {selectedLead && (
-            <div className="w-full h-full flex flex-col xl:flex-row overflow-hidden">
-              <div className="flex-1 min-w-0 h-full overflow-y-auto bg-white">
-                <DialogHeader className="px-8 py-7 border-b border-black/[0.06] bg-white sticky top-0 z-20">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-start justify-between gap-6 flex-wrap">
-                      <div className="min-w-0 flex-1">
-                        <DialogTitle className="text-[26px] font-semibold tracking-tight">
-                          {selectedLead.name}
-                        </DialogTitle>
-
-                        <div className="flex items-center gap-3 mt-3 flex-wrap">
-                          <p className="text-sm text-zinc-500 break-all">
-                            {selectedLead.email}
-                          </p>
-
-                          <div
-                            className={`h-8 px-3 rounded-md border text-xs font-medium flex items-center shrink-0 ${getStatusStyle(
-                              selectedLead.proposal_status,
-                            )}`}
-                          >
-                            {selectedLead.proposal_status}
-                          </div>
+            <div className="w-full flex-1 flex flex-col xl:flex-row overflow-hidden min-h-0">
+              {/* Main content */}
+              <div className="flex-1 min-w-0 overflow-y-auto bg-white">
+                <DialogHeader className="px-6 py-5 border-b border-black/[0.06] bg-white sticky top-0 z-20">
+                  <div className="flex items-start justify-between gap-4 pr-8">
+                    <div className="min-w-0 flex-1">
+                      <DialogTitle className="text-xl font-semibold tracking-tight leading-tight">
+                        {selectedLead.name}
+                      </DialogTitle>
+                      <div className="flex items-center gap-2.5 mt-2 flex-wrap">
+                        <p className="text-sm text-zinc-500 break-all">
+                          {selectedLead.email}
+                        </p>
+                        <div
+                          className={`h-6 px-2.5 rounded border text-xs font-medium flex items-center shrink-0 ${getStatusStyle(
+                            selectedLead.proposal_status,
+                          )}`}
+                        >
+                          {selectedLead.proposal_status}
                         </div>
                       </div>
                     </div>
                   </div>
                 </DialogHeader>
 
-                <div className="p-8 xl:p-10 space-y-8">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4">
+                <div className="p-6 space-y-5">
+                  {/* Stats grid */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     {[
                       {
                         label: "Lead Quality",
@@ -222,55 +220,58 @@ export default function DashboardClient() {
                     ].map((item) => (
                       <div
                         key={item.label}
-                        className="border border-black/[0.06] bg-[#fafafa] rounded-md p-5 min-w-0"
+                        className="border border-black/[0.06] bg-[#fafafa] rounded-md p-4"
                       >
-                        <p className="text-xs uppercase tracking-wide text-zinc-500">
+                        <p className="text-[11px] uppercase tracking-wide text-zinc-400 font-medium">
                           {item.label}
                         </p>
-
-                        <h3 className="text-[15px] font-semibold mt-4 break-words">
+                        <h3 className="text-sm font-semibold mt-2 break-words text-zinc-800">
                           {item.value}
                         </h3>
                       </div>
                     ))}
                   </div>
 
-                  <div className="border border-black/[0.06] rounded-md p-7">
-                    <div className="flex items-center gap-2 mb-6">
+                  {/* AI Analysis */}
+                  <div className="border border-black/[0.06] rounded-md p-5">
+                    <div className="flex items-center gap-2 mb-4">
                       <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
-
-                      <h2 className="text-[15px] font-semibold">AI Analysis</h2>
+                      <h2 className="text-sm font-semibold">AI Analysis</h2>
                     </div>
-
-                    <p className="text-[15px] leading-8 text-zinc-600 whitespace-pre-wrap break-words">
+                    <p className="text-sm leading-7 text-zinc-600 whitespace-pre-wrap break-words">
                       {selectedLead.ai_reason || "No AI analysis available"}
                     </p>
                   </div>
 
-                  <div className="border border-black/[0.06] rounded-md p-7">
-                    <div className="flex items-center gap-2 mb-6">
+                  {/* Client Message */}
+                  <div className="border border-black/[0.06] rounded-md p-5">
+                    <div className="flex items-center gap-2 mb-4">
                       <Mail className="w-4 h-4 text-blue-600 shrink-0" />
-
-                      <h2 className="text-[15px] font-semibold">
-                        Client Message
-                      </h2>
+                      <h2 className="text-sm font-semibold">Client Message</h2>
                     </div>
-
-                    <p className="text-[15px] leading-8 text-zinc-600 whitespace-pre-wrap break-words">
+                    <p className="text-sm leading-7 text-zinc-600 whitespace-pre-wrap break-words">
                       {selectedLead.message}
                     </p>
                   </div>
 
-                  <div className="border border-black/[0.06] rounded-md p-7">
-                    <div className="flex items-center gap-2 mb-6">
+                  {/* AI Proposal Draft */}
+                  <div className="border border-black/[0.06] rounded-md p-5">
+                    <div className="flex items-center gap-2 mb-4">
                       <BarChart3 className="w-4 h-4 text-blue-600 shrink-0" />
-
-                      <h2 className="text-[15px] font-semibold">
+                      <h2 className="text-sm font-semibold">
                         AI Proposal Draft
                       </h2>
                     </div>
-
-                    <div className="prose prose-zinc max-w-none prose-p:leading-8 prose-p:text-[15px] prose-headings:tracking-tight break-words">
+                    <div
+                      className="prose prose-sm prose-zinc max-w-none break-words
+                [&>p]:leading-7 [&>p]:text-zinc-600 [&>p]:mb-4
+                [&>h1]:text-base [&>h1]:font-semibold [&>h1]:mb-3 [&>h1]:mt-5
+                [&>h2]:text-sm [&>h2]:font-semibold [&>h2]:mb-2 [&>h2]:mt-4
+                [&>h3]:text-sm [&>h3]:font-semibold [&>h3]:mb-2 [&>h3]:mt-4
+                [&>ul]:mb-4 [&>ul]:pl-4 [&>ul>li]:mb-1 [&>ul>li]:text-sm [&>ul>li]:text-zinc-600 [&>ul>li]:leading-6
+                [&>ol]:mb-4 [&>ol]:pl-4 [&>ol>li]:mb-1 [&>ol>li]:text-sm [&>ol>li]:text-zinc-600 [&>ol>li]:leading-6
+              "
+                    >
                       <ReactMarkdown remarkPlugins={[remarkBreaks]}>
                         {selectedLead.proposal_text ||
                           "No proposal generated yet"}
@@ -280,61 +281,55 @@ export default function DashboardClient() {
                 </div>
               </div>
 
-              <div className="w-full xl:w-[380px] 2xl:w-[420px] border-t xl:border-t-0 xl:border-l border-black/[0.06] bg-[#fafafa] h-[320px] xl:h-full overflow-y-auto shrink-0">
-                <div className="px-7 py-6 border-b border-black/[0.06] bg-white sticky top-0 z-10">
-                  <h2 className="text-[15px] font-semibold">
-                    Activity Timeline
-                  </h2>
+              {/* Activity Timeline sidebar */}
+              <div className="w-full xl:w-[320px] border-t xl:border-t-0 xl:border-l border-black/[0.06] bg-[#fafafa] flex flex-col max-h-[40vh] xl:max-h-none shrink-0">
+                <div className="px-5 py-4 border-b border-black/[0.06] bg-white sticky top-0 z-10 shrink-0">
+                  <h2 className="text-sm font-semibold">Activity Timeline</h2>
                 </div>
-
-                {activities.length === 0 ? (
-                  <div className="p-7 text-sm text-zinc-500">
-                    No activities yet
-                  </div>
-                ) : (
-                  activities.map((activity: any, index: number) => (
-                    <div
-                      key={activity.id}
-                      className={`px-7 py-6 ${
-                        index !== activities.length - 1
-                          ? "border-b border-black/[0.05]"
-                          : ""
-                      }`}
-                    >
-                      <div className="flex gap-4">
-                        <div className="pt-2 shrink-0">
-                          <div className="w-2 h-2 rounded-full bg-blue-600" />
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-col gap-3">
-                            <div className="flex items-start justify-between gap-4">
-                              <p className="text-sm font-semibold break-words">
+                <div className="overflow-y-auto flex-1">
+                  {activities.length === 0 ? (
+                    <div className="p-5 text-sm text-zinc-400">
+                      No activities yet
+                    </div>
+                  ) : (
+                    activities.map((activity: any, index: number) => (
+                      <div
+                        key={activity.id}
+                        className={`px-5 py-4 ${
+                          index !== activities.length - 1
+                            ? "border-b border-black/[0.05]"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex gap-3">
+                          <div className="pt-1.5 shrink-0">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-3 mb-1.5">
+                              <p className="text-xs font-semibold text-zinc-800 break-words">
                                 {activity.activity_type}
                               </p>
-
-                              <p className="text-xs text-zinc-400 whitespace-nowrap shrink-0">
+                              <p className="text-[11px] text-zinc-400 whitespace-nowrap shrink-0">
                                 {new Date(
                                   activity.created_at,
                                 ).toLocaleDateString()}
                               </p>
                             </div>
-
-                            <p className="text-sm text-zinc-600 leading-7 break-words">
+                            <p className="text-xs text-zinc-500 leading-6 break-words">
                               {activity.activity_text}
                             </p>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
-
       <header className="h-16 border-b border-black/[0.06] bg-white sticky top-0 z-30">
         <div className="max-w-[1600px] mx-auto px-8 h-full flex items-center justify-between">
           <h1 className="text-[18px] font-semibold tracking-tight">
