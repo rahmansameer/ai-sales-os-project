@@ -22,7 +22,7 @@ export default function ContactForm() {
 
     try {
       await fetch(
-        "https://survivor-ocelot-outback.ngrok-free.dev/webhook-test/lead-capture",
+        "https://survivor-ocelot-outback.ngrok-free.dev/webhook/lead-capture",
         {
           method: "POST",
           headers: {
